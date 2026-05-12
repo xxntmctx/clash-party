@@ -118,7 +118,13 @@ export const mihomoGroups = async (): Promise<IMihomoMixedGroup[]> => {
   if (!groups.find((group) => group.name === 'GLOBAL')) {
     const newGlobal = proxies.proxies['GLOBAL'] as IMihomoGroup
     if (!newGlobal.hidden) {
-      const newAll = (newGlobal.all || []).map((name) => proxies.proxies[name])
+      const userGroupNames =
+        runtime?.['proxy-groups']?.map((group: { name: string }) => group.name) || []
+      const originalAll = newGlobal.all || []
+      const specialItems = originalAll.filter((name) => name === 'DIRECT' || name === 'REJECT')
+      const otherProxies = originalAll.filter((name) => name !== 'DIRECT' && name !== 'REJECT')
+      const combinedAll = Array.from(new Set([...specialItems, ...userGroupNames, ...otherProxies]))
+      const newAll = combinedAll.map((name) => proxies.proxies[name]).filter(Boolean)
       groups.push({ ...newGlobal, all: newAll })
     }
   }
