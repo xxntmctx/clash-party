@@ -2,7 +2,13 @@ import { Tabs, Tab } from '@heroui/react'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import { useGroups } from '@renderer/hooks/use-groups'
-import { mihomoCloseAllConnections, patchMihomoConfig, updateTrayIcon } from '@renderer/utils/ipc'
+import {
+  mihomoChangeProxy,
+  mihomoCloseAllConnections,
+  mihomoProxies,
+  patchMihomoConfig,
+  updateTrayIcon
+} from '@renderer/utils/ipc'
 import { Key } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -17,6 +23,24 @@ const OutboundModeSwitcher: React.FC = () => {
   const onChangeMode = async (mode: OutboundMode): Promise<void> => {
     await patchControledMihomoConfig({ mode })
     await patchMihomoConfig({ mode })
+
+    // Added: 如果切换到全局模式，且 GLOBAL 组当前是 DIRECT，则自动切换到第一个可用节点
+    if (mode === 'global') {
+      try {
+        const proxies = await mihomoProxies()
+        const globalGroup = proxies.proxies['GLOBAL'] as IMihomoGroup
+        if (globalGroup && globalGroup.now === 'DIRECT') {
+          const members = globalGroup.all || []
+          const targetNode = members.find((name) => name !== 'DIRECT' && name !== 'REJECT')
+          if (targetNode) {
+            await mihomoChangeProxy('GLOBAL', targetNode)
+          }
+        }
+      } catch (e) {
+        console.error('Failed to auto switch GLOBAL proxy:', e)
+      }
+    }
+
     if (autoCloseConnection) {
       await mihomoCloseAllConnections()
     }
