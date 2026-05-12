@@ -115,7 +115,7 @@ export const mihomoGroups = async (): Promise<IMihomoMixedGroup[]> => {
       groups.push({ ...newGroup, all: newAll })
     }
   })
-  if (!groups.find((group) => group.name === 'GLOBAL')) {
+  if (mode === 'global' && !groups.find((group) => group.name === 'GLOBAL')) {
     const newGlobal = proxies.proxies['GLOBAL'] as IMihomoGroup
     if (!newGlobal.hidden) {
       const userGroupNames =
@@ -130,7 +130,9 @@ export const mihomoGroups = async (): Promise<IMihomoMixedGroup[]> => {
   }
   if (mode === 'global') {
     const global = groups.findIndex((group) => group.name === 'GLOBAL')
-    groups.unshift(groups.splice(global, 1)[0])
+    if (global !== -1) {
+      groups.unshift(groups.splice(global, 1)[0])
+    }
   }
   return groups
 }

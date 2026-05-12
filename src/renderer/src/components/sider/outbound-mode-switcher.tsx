@@ -30,10 +30,19 @@ const OutboundModeSwitcher: React.FC = () => {
         const proxies = await mihomoProxies()
         const globalGroup = proxies.proxies['GLOBAL'] as IMihomoGroup
         if (globalGroup && globalGroup.now === 'DIRECT') {
-          const members = globalGroup.all || []
-          const targetNode = members.find((name) => name !== 'DIRECT' && name !== 'REJECT')
-          if (targetNode) {
-            await mihomoChangeProxy('GLOBAL', targetNode)
+          const { mihomoGroups } = await import('@renderer/utils/ipc')
+          const uiGroups = await mihomoGroups()
+          const uiGlobal = uiGroups.find((g) => g.name === 'GLOBAL')
+          if (uiGlobal && uiGlobal.all) {
+            const members = uiGlobal.all.filter(
+              (node) => node && node.name !== 'DIRECT' && node.name !== 'REJECT'
+            )
+
+            const targetNode = members[0]
+
+            if (targetNode) {
+              await mihomoChangeProxy('GLOBAL', targetNode.name)
+            }
           }
         }
       } catch (e) {
