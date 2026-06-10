@@ -155,6 +155,7 @@ jobs:
             dist/*.sha256
             dist/*setup.exe
             dist/*portable.7z
+            dist/latest.yml
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish Dev Release
         if: github.event_name == 'workflow_dispatch'
@@ -165,6 +166,7 @@ jobs:
             dist/*.sha256
             dist/*setup.exe
             dist/*portable.7z
+            dist/latest.yml
           prerelease: true
           draft: false
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -242,6 +244,7 @@ jobs:
             dist/*.sha256
             dist/*setup.exe
             dist/*portable.7z
+            dist/latest.yml
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish Dev Release
         if: github.event_name == 'workflow_dispatch'
@@ -252,6 +255,7 @@ jobs:
             dist/*.sha256
             dist/*setup.exe
             dist/*portable.7z
+            dist/latest.yml
           prerelease: true
           draft: false
           token: ${{ secrets.GITHUB_TOKEN }}
