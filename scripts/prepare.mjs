@@ -455,6 +455,99 @@ const resolveFont = async () => {
   console.log(`[INFO]: NotoColorEmoji.ttf finished`)
 }
 
+// // Added: 提取本地微软 C++ 运行库 DLL 的逻辑
+async function resolveRuntimeDlls() {
+  const dllDir = path.join(cwd, 'extra', 'dlls', arch)
+  fs.mkdirSync(dllDir, { recursive: true })
+
+  const dllsToCopy = ['vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll']
+  let foundLocal = false
+
+  if (platform === 'win32') {
+    const vsBases = [
+      'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Redist\\MSVC',
+      'C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Redist\\MSVC',
+      'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Redist\\MSVC',
+      'C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Redist\\MSVC',
+      'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Redist\\MSVC',
+      'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Redist\\MSVC',
+      'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Community\\VC\\Redist\\MSVC',
+      'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Professional\\VC\\Redist\\MSVC'
+    ]
+
+    let redistDir = ''
+    for (const base of vsBases) {
+      if (fs.existsSync(base)) {
+        try {
+          const versions = fs.readdirSync(base)
+          if (versions.length > 0) {
+            redistDir = path.join(base, versions[versions.length - 1])
+            break
+          }
+        } catch {
+          // 忽略单个目录的权限等异常
+        }
+      }
+    }
+
+    let sourceDir = ''
+    if (redistDir) {
+      const vsArch = arch === 'ia32' ? 'x86' : arch
+      const onecoreDir = path.join(redistDir, 'onecore', vsArch)
+      const normalDir = path.join(redistDir, vsArch)
+
+      const checkDir = fs.existsSync(onecoreDir) ? onecoreDir : normalDir
+      if (fs.existsSync(checkDir)) {
+        try {
+          const crtDirs = fs.readdirSync(checkDir).filter((d) => d.includes('CRT'))
+          if (crtDirs.length > 0) {
+            sourceDir = path.join(checkDir, crtDirs[0])
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!sourceDir) {
+      if (arch === 'x64') {
+        sourceDir = 'C:\\Windows\\System32'
+      } else if (arch === 'ia32') {
+        sourceDir = 'C:\\Windows\\SysWOW64'
+      }
+    }
+
+    if (sourceDir && fs.existsSync(sourceDir)) {
+      console.log(`[INFO]: Found VC++ DLL source directory at "${sourceDir}"`)
+      let copiedCount = 0
+      for (const dll of dllsToCopy) {
+        if (arch === 'ia32' && dll === 'vcruntime140_1.dll') continue
+
+        const srcPath = path.join(sourceDir, dll)
+        const destPath = path.join(dllDir, dll)
+        if (fs.existsSync(srcPath)) {
+          try {
+            fs.copyFileSync(srcPath, destPath)
+            copiedCount++
+          } catch (err) {
+            console.error(`[ERROR]: Failed to copy ${dll} from ${srcPath}:`, err.message)
+          }
+        }
+      }
+      if (copiedCount > 0) {
+        foundLocal = true
+        console.log(`[INFO]: Successfully copied ${copiedCount} runtime DLLs locally for ${arch}`)
+      }
+    }
+  }
+
+  if (!foundLocal) {
+    throw new Error(
+      `[ERROR]: Failed to find local VC++ runtime DLLs for target arch ${arch}. Please ensure Visual Studio or VC++ Redistributable is installed on the build machine.`
+    )
+  }
+}
+
 const tasks = [
   {
     name: 'mihomo-alpha',
@@ -524,6 +617,13 @@ const tasks = [
     func: resolveHelper,
     retry: 5,
     darwinOnly: true
+  },
+  // // Added: 微软 VC++ 运行时拷贝任务
+  {
+    name: 'runtime-dlls',
+    func: resolveRuntimeDlls,
+    retry: 3,
+    winOnly: true
   }
 ]
 

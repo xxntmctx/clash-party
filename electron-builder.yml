@@ -28,6 +28,12 @@ win:
     - nsis
     - 7z
   artifactName: clash-party-windows-${version}-${arch}-portable.${ext}
+  # // Added: 微软 VC++ 运行库 DLL 打包配置（仅在 Windows 编译时生效）
+  extraFiles:
+    - from: './extra/dlls/${arch}/'
+      to: '.'
+      filter:
+        - '*.dll'
 nsis:
   artifactName: clash-party-windows-${version}-${arch}-setup.${ext}
   uninstallDisplayName: ${productName}
