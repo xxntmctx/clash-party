@@ -357,14 +357,14 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: node scripts/update-version.mjs
       - name: Telegram Notification
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && secrets.TELEGRAM_BOT_TOKEN != ''
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           RELEASE_TYPE: release
         run: pnpm telegram
       - name: Telegram Dev Notification
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && secrets.TELEGRAM_BOT_TOKEN != ''
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
