@@ -69,19 +69,50 @@ export async function checkUpdate(): Promise<IAppVersion | undefined> {
 function compareVersions(a: string, b: string): number {
   // // Added: 防空安全处理，如果任一版本号为空则直接返回相同（0）
   if (!a || !b) return 0
+
   const parsePart = (part: string) => {
     const numPart = part.split('-')[0]
     const num = parseInt(numPart, 10)
     return isNaN(num) ? 0 : num
   }
-  const v1 = a.replace(/^v/, '').split('.').map(parsePart)
-  const v2 = b.replace(/^v/, '').split('.').map(parsePart)
+
+  const cleanA = a.replace(/^v/, '')
+  const cleanB = b.replace(/^v/, '')
+
+  const v1 = cleanA.split('.').map(parsePart)
+  const v2 = cleanB.split('.').map(parsePart)
+
+  // 1. 比较主版本号、次版本号、修订号
   for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
     const num1 = v1[i] || 0
     const num2 = v2[i] || 0
     if (num1 > num2) return 1
     if (num1 < num2) return -1
   }
+
+  // 2. 主、次、修订号完全相同时，比较先行版本后缀（如 1.9.5-06110731 中的 06110731）
+  const getPrerelease = (versionStr: string) => {
+    const index = versionStr.indexOf('-')
+    return index !== -1 ? versionStr.substring(index + 1) : ''
+  }
+
+  const pre1 = getPrerelease(cleanA)
+  const pre2 = getPrerelease(cleanB)
+
+  if (pre1 && !pre2) {
+    // 线上有后缀测试版，本地无后缀：判定线上更新（在频繁打 tag 的项目发布中适用）
+    return 1
+  }
+  if (!pre1 && pre2) {
+    // 线上无后缀（正式稳定版），本地有后缀测试版：判定线上正式版更新
+    return 1
+  }
+  if (pre1 && pre2) {
+    // 都有后缀，根据字符串进行字典序/数值比较
+    if (pre1 > pre2) return 1
+    if (pre1 < pre2) return -1
+  }
+
   return 0
 }
 
