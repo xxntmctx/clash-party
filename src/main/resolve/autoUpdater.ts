@@ -51,6 +51,12 @@ export async function checkUpdate(): Promise<IAppVersion | undefined> {
     responseType: 'text'
   })
   const latest = parse(res.data as string) as IAppVersion
+  // // Added: 防御性校验，确保最新版本配置文件有效且版本号字段存在，防止 compareVersions 报错崩溃
+  if (!latest || typeof latest !== 'object' || !latest.version) {
+    throw new Error(
+      'Failed to parse update information. The latest.yml file might be missing or corrupt.'
+    )
+  }
   const currentVersion = app.getVersion()
   if (compareVersions(latest.version, currentVersion) > 0) {
     return latest
@@ -61,6 +67,8 @@ export async function checkUpdate(): Promise<IAppVersion | undefined> {
 
 // 1:新 -1:旧 0:相同
 function compareVersions(a: string, b: string): number {
+  // // Added: 防空安全处理，如果任一版本号为空则直接返回相同（0）
+  if (!a || !b) return 0
   const parsePart = (part: string) => {
     const numPart = part.split('-')[0]
     const num = parseInt(numPart, 10)
