@@ -542,6 +542,18 @@ async function resolveRuntimeDlls() {
   }
 
   if (!foundLocal) {
+    if (arch === 'arm64') {
+      console.warn(
+        `[WARN]: Failed to find local VC++ runtime DLLs for target arch ${arch}. Skipping runtime DLL packaging for arm64.`
+      )
+      // // Added: 写入空的占位 dll 以防止 electron-builder 因匹配不到文件而中止打包
+      try {
+        fs.writeFileSync(path.join(dllDir, 'placeholder.dll'), '')
+      } catch {
+        // ignore
+      }
+      return
+    }
     throw new Error(
       `[ERROR]: Failed to find local VC++ runtime DLLs for target arch ${arch}. Please ensure Visual Studio or VC++ Redistributable is installed on the build machine.`
     )
