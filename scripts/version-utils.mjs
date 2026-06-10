@@ -55,9 +55,14 @@ export function isDevBuild() {
 export function getProcessedVersion() {
   if (isDevBuild()) {
     return getDevVersion()
-  } else {
-    return getBaseVersion()
   }
+
+  // // Added: 如果在 GitHub Actions 中由 release tag 触发，则将版本号更新为 tag 中的版本号 (例如 1.9.5-06110652)
+  if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_REF?.startsWith('refs/tags/v')) {
+    return process.env.GITHUB_REF.replace('refs/tags/v', '').trim()
+  }
+
+  return getBaseVersion()
 }
 
 // 生成下载URL
