@@ -57,9 +57,17 @@ export function getProcessedVersion() {
     return getDevVersion()
   }
 
-  // // Added: 如果在 GitHub Actions 中由 release tag 触发，则将版本号更新为 tag 中的版本号 (例如 1.9.5-06110652)
+  // If triggered by a release tag in GitHub Actions, update the version to the tag version
   if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_REF?.startsWith('refs/tags/v')) {
-    return process.env.GITHUB_REF.replace('refs/tags/v', '').trim()
+    const rawTag = process.env.GITHUB_REF.replace('refs/tags/v', '').trim()
+    const semverRegex = /^\d+\.\d+\.\d+(?:-.*)?$/
+    if (semverRegex.test(rawTag)) {
+      return rawTag
+    }
+    // If the tag is not valid SemVer, format it as a pre-release version of the base version
+    const baseVersion = getBaseVersion()
+    const sanitizedTag = rawTag.replace(/[^0-9A-Za-z-]/g, '-')
+    return `${baseVersion}-${sanitizedTag}`
   }
 
   return getBaseVersion()
