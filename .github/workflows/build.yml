@@ -287,10 +287,10 @@ jobs:
         run: |
           pnpm install
           sed -i "s/productName: Clash Party/productName: clash-party/" electron-builder.yml
-      - name: Update Version for Dev Build
-        if: github.event_name == 'workflow_dispatch'
+      - name: Update Version
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
         env:
-          GITHUB_EVENT_NAME: workflow_dispatch
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: node scripts/update-version.mjs
       - name: Prepare
         run: pnpm prepare --${{ matrix.arch }}
