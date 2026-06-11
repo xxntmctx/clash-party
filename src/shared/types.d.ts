@@ -308,6 +308,7 @@ interface IAppConfig {
   useWindowFrame: boolean
   proxyInTray: boolean
   showCurrentProxyInTray: boolean
+  enableTrafficLogger?: boolean
   siderOrder: string[]
   siderWidth: number
   appTheme: AppTheme
@@ -319,11 +320,13 @@ interface IAppConfig {
   sysProxy: ISysProxyConfig
   maxLogDays: number
   maxLogFileSize: number
+  disableAppLog?: boolean
   userAgent?: string
   delayTestConcurrency?: number
   delayTestUrl?: string
   delayTestTimeout?: number
   networkLatencyTargets?: INetworkLatencyTarget[]
+  networkIPProvider?: 'ip.sb' | 'ipwho.is' | 'ipapi.is'
   subscriptionTimeout?: number
   encryptedPassword?: number[]
   controlDns?: boolean

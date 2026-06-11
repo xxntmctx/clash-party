@@ -320,6 +320,15 @@ const Mihomo: React.FC = () => {
 
   const onChangeNeedRestart = async (patch: Partial<IMihomoConfig>): Promise<void> => {
     await patchControledMihomoConfig(patch)
+    try {
+      if (appConfig?.useHotReloadProfile) {
+        await mihomoHotReloadConfig()
+      } else {
+        await restartCore()
+      }
+    } catch (e) {
+      console.error('Apply config change failed:', e)
+    }
   }
 
   const handleConfigChangeWithRestart = async (key: string, value: unknown) => {
@@ -1219,7 +1228,7 @@ const Mihomo: React.FC = () => {
                       <Input
                         size="sm"
                         fullWidth
-                        placeholder={t('mihomo.username.placeholder')}
+                        placeholder={t('mihomo.ipSegment.placeholder')}
                         value={ipcidr || ''}
                         onValueChange={(v) => {
                           if (index === lanDisallowedIpsInput.length) {
