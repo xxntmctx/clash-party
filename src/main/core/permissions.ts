@@ -1,4 +1,4 @@
-import { exec, execFile } from 'child_process'
+import { exec, execFile, spawn } from 'child_process'
 import { promisify } from 'util'
 import { stat } from 'fs/promises'
 import { existsSync } from 'fs'
@@ -258,20 +258,24 @@ export async function restartAsAdmin(forTun: boolean = true): Promise<void> {
   const escapedExePath = exePath.replace(/'/g, "''")
   const argsString = restartArgs.map((arg) => arg.replace(/'/g, "''")).join("', '")
 
-  // 使用 Start-Sleep 延迟启动，确保旧进程完全退出后再启动新进程
-  const command =
+  const powershellArgs = [
+    '-NoProfile',
+    '-Command',
     restartArgs.length > 0
-      ? `powershell -NoProfile -Command "Start-Sleep -Milliseconds 1000; Start-Process -FilePath '${escapedExePath}' -ArgumentList '${argsString}' -Verb RunAs"`
-      : `powershell -NoProfile -Command "Start-Sleep -Milliseconds 1000; Start-Process -FilePath '${escapedExePath}' -Verb RunAs"`
+      ? `Start-Sleep -Milliseconds 1000; Start-Process -FilePath '${escapedExePath}' -ArgumentList '${argsString}' -Verb RunAs`
+      : `Start-Sleep -Milliseconds 1000; Start-Process -FilePath '${escapedExePath}' -Verb RunAs`
+  ]
 
-  managerLogger.info('Restarting as administrator with command', command)
+  managerLogger.info('Restarting as administrator via detached powershell process', powershellArgs)
 
-  // 先启动 PowerShell（它会等待 1 秒），然后立即退出当前进程
-  exec(command, { windowsHide: true }, (error) => {
-    if (error) {
-      managerLogger.error('Failed to start PowerShell for admin restart', error)
-    }
+  // 使用 detached 独立运行 PowerShell，防止被 app.exit(0) 强杀
+  const pproc = spawn('powershell', powershellArgs, {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true
   })
+  pproc.unref()
+
   managerLogger.info('PowerShell command started, quitting app immediately')
   app.exit(0)
 }
